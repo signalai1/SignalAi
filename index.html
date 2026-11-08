@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>Signal AI</title>
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2d;--line:#24344a;--muted:#91a3b8;--text:#eef4fb;--accent:#60d6b5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px max(18px,calc((100% - 1080px)/2));border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b1220ed;backdrop-filter:blur(12px);z-index:2}
+.brand{font-weight:800;letter-spacing:.3px;font-size:20px}.brand span{color:var(--accent)}nav{display:flex;gap:8px}
+button,input{font:inherit}button{border:1px solid var(--line);background:#172438;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}button.active,button.primary{background:var(--accent);color:#082019;border-color:var(--accent);font-weight:700}
+main{max-width:1080px;margin:30px auto;padding:0 18px}.eyebrow{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+h1{font-size:clamp(28px,5vw,42px);margin:8px 0}p{color:var(--muted);line-height:1.55}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}.search{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--text)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:16px}.market-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.market{width:100%;text-align:left;padding:16px;background:#0e1928}.market strong{display:block;font-size:16px}.market small{color:var(--muted)}
+.hidden{display:none!important}.chart-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.chart-placeholder{height:280px;border:1px dashed #38516c;border-radius:12px;display:grid;place-items:center;text-align:center;margin-top:16px;background:linear-gradient(180deg,#122235,#101a29)}
+.notice{border-left:3px solid #e5b45b;padding:10px 13px;background:#211e18;border-radius:8px;color:#e9d6b3;font-size:13px;margin-top:16px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted)}footer{max-width:1080px;margin:35px auto;padding:0 18px 30px;color:var(--muted);font-size:12px}
+@media(max-width:520px){header{padding:14px 16px}main{margin-top:22px}.panel{padding:14px}}
+</style></head>
+<body>
+<header><div class="brand">SIGNAL <span>AI</span></div><nav><button id="homeTab" class="active">Home</button><button id="chartsTab">Charts</button></nav></header>
+<main>
+<section id="homeView">
+<div class="eyebrow">Market research workspace</div><h1>Find your next market to study.</h1>
+<p>Browse commodities and crypto, then open one market at a time in Charts.</p>
+<div class="toolbar"><button class="category active" data-cat="commodities">Commodities</button><button class="category" data-cat="crypto">Crypto</button><input id="search" class="search" placeholder="Search markets…"></div>
+<div class="panel"><div class="chart-head"><div><strong id="listTitle">Commodities</strong><div class="status">Market directory · sample catalog</div></div><span class="status" id="count"></span></div><div id="marketList" class="market-list"></div></div>
+</section>
+<section id="chartsView" class="hidden">
+<div class="eyebrow">Single-market view</div><h1 id="selectedName">Choose a market</h1><p id="selectedSymbol">Select a market from Home to begin.</p>
+<div class="panel">
+<div class="chart-head"><div><strong>Chart controls</strong><div class="status">Choose one interval at a time</div></div><button id="backHome">← Market list</button></div>
+<div class="toolbar pills"><button class="interval active" data-interval="1m">1 minute</button><button class="interval" data-interval="5m">5 minutes</button><button class="interval" data-interval="15m">15 minutes</button><button id="haToggle" class="active">Heikin-Ashi: On</button></div>
+<div class="chart-placeholder"><div><strong>Chart area</strong><p>Connect a verified market-data feed to display live candles.</p><span class="status" id="chartState">1m · Heikin-Ashi enabled</span></div></div>
+<div class="notice">Data connection not configured. No live Kalshi prices, TradingView feed, trade signals, or order execution are active.</div>
+</div>
+<div class="panel"><strong>Analysis</strong><p>Signal analysis will appear here after verified market data and tested analysis logic are connected. This page does not currently generate buy/sell recommendations.</p></div>
+</section>
+</main>
+<footer>Signal AI · Research interface starter. Not financial advice. Verify all market information independently.</footer>
+<script>
+let category='commodities', markets=[], selected=null, interval='1m', ha=true;
+const $=id=>document.getElementById(id);
+async function loadMarkets(){const r=await fetch('/api/markets?category='+category);markets=await r.json();render();}
+function render(){const q=$('search').value.toLowerCase();const shown=markets.filter(m=>(m.name+' '+m.symbol).toLowerCase().includes(q));$('marketList').innerHTML='';shown.forEach(m=>{const b=document.createElement('button');b.className='market';b.innerHTML='<strong>'+m.name+'</strong><small>'+m.symbol+' · '+m.category+'</small>';b.onclick=()=>openMarket(m);$('marketList').appendChild(b)});$('count').textContent=shown.length+' markets';$('listTitle').textContent=category==='crypto'?'Crypto':'Commodities';}
+function show(view){$('homeView').classList.toggle('hidden',view!=='home');$('chartsView').classList.toggle('hidden',view!=='charts');$('homeTab').classList.toggle('active',view==='home');$('chartsTab').classList.toggle('active',view==='charts');}
+function openMarket(m){selected=m;$('selectedName').textContent=m.name;$('selectedSymbol').textContent=m.symbol+' · '+m.category;show('charts');updateChartState();}
+function updateChartState(){$('chartState').textContent=interval+' · Heikin-Ashi '+(ha?'enabled':'disabled');}
+document.querySelectorAll('.category').forEach(b=>b.onclick=()=>{category=b.dataset.cat;document.querySelectorAll('.category').forEach(x=>x.classList.toggle('active',x===b));loadMarkets()});
+document.querySelectorAll('.interval').forEach(b=>b.onclick=()=>{interval=b.dataset.interval;document.querySelectorAll('.interval').forEach(x=>x.classList.toggle('active',x===b));updateChartState()});
+$('haToggle').onclick=()=>{ha=!ha;$('haToggle').textContent='Heikin-Ashi: '+(ha?'On':'Off');$('haToggle').classList.toggle('active',ha);updateChartState()};
+$('search').oninput=render;$('homeTab').onclick=()=>show('home');$('chartsTab').onclick=()=>show('charts');$('backHome').onclick=()=>show('home');loadMarkets();
+</script></body></html>
